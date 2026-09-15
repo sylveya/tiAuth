@@ -21,16 +21,11 @@ import ru.matveylegenda.tiauth.config.MainConfig;
 import ru.matveylegenda.tiauth.config.MessagesConfig;
 import ru.matveylegenda.tiauth.database.Database;
 import ru.matveylegenda.tiauth.database.backup.DatabaseBackup;
-import ru.matveylegenda.tiauth.picolimbo.LibraryLoader;
-import ru.matveylegenda.tiauth.picolimbo.PicoLimboRunner;
 import ru.matveylegenda.tiauth.util.KeyLoader;
 import ru.matveylegenda.tiauth.util.Utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,8 +40,6 @@ public final class TiAuth extends Plugin {
     private AutoBackupManager autoBackupManager;
 
     private byte[] secretKey;
-
-    private PicoLimboRunner worker;
 
     @Override
     public void onLoad() {
@@ -71,7 +64,6 @@ public final class TiAuth extends Plugin {
         databaseBackup = new DatabaseBackup(database);
         autoBackupManager = new AutoBackupManager(this);
         autoBackupManager.restart();
-        startLimboServer(dataFolder);
         Utils.initializeColorizer(MainConfig.IMP.serializer);
         taskManager = new TaskManager(this);
         authManager = new AuthManager(this);
@@ -114,10 +106,6 @@ public final class TiAuth extends Plugin {
             } catch (Exception e) {
                 logger.log(Level.WARNING, "Error during database closing", e);
             }
-        }
-
-        if (worker != null) {
-            worker.stop();
         }
     }
 
@@ -282,45 +270,6 @@ public final class TiAuth extends Plugin {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error during database initialization. Stopping server...", e);
             getProxy().stop();
-        }
-    }
-
-    private void startLimboServer(File dataFolder) {
-        if (MainConfig.IMP.servers.useVirtualServer) {
-            Path limboPath = dataFolder.toPath().resolve("picolimbo");
-
-            if (!Files.exists(limboPath)) {
-                try {
-                    Files.createDirectories(limboPath);
-                } catch (IOException e) {
-                    logger.log(Level.SEVERE, "Error when starting the virtual server. Stopping server...", e);
-                    getProxy().stop();
-                    return;
-                }
-            }
-
-            Path configFile = limboPath.resolve("config.toml");
-
-            try {
-                LibraryLoader.RustLib lib = LibraryLoader.loadOrDownloadLib(limboPath);
-
-                this.worker = new PicoLimboRunner(MainConfig.IMP.servers.virtualServerPort, configFile, lib);
-
-                getProxy().getScheduler().runAsync(this, worker);
-
-                getProxy().getServers().put(
-                        MainConfig.IMP.servers.auth,
-                        getProxy().constructServerInfo(
-                                MainConfig.IMP.servers.auth,
-                                new InetSocketAddress("127.0.0.1", MainConfig.IMP.servers.virtualServerPort),
-                                "auth server",
-                                false
-                        )
-                );
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error when starting the virtual server. Stopping server...", e);
-                getProxy().stop();
-            }
         }
     }
 

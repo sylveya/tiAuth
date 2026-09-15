@@ -53,26 +53,9 @@ public class MainConfig extends YamlSerializable {
 
     @NewLine
     public static class Servers {
-        @Comment({
-                @CommentValue("Использовать ли виртуальный сервер PicoLimbo (https://github.com/Quozul/PicoLimbo) для сервера авторизации"),
-                @CommentValue("Настройка виртуального сервера в plugins/tiAuth/picolimbo/config.toml")
-        })
-        public boolean useVirtualServer = false;
-
-        @Comment({
-                @CommentValue("Порт виртуального сервера")
-        })
-        public int virtualServerPort = 65535;
-
-        @Comment({
-                @CommentValue("Обновлять ли автоматически PicoLimbo если доступно обновление")
-        })
-        public boolean virtualServerAutoUpdate = true;
-
         @NewLine
         @Comment({
-                @CommentValue("Сервер авторизации на который будет перемещать игроков для регистрации/авторизации"),
-                @CommentValue("При использовании виртуального сервера убедитесь, что в конфигурации BungeeCord у вас нет сервера с таким же названием")
+                @CommentValue("Сервер авторизации на который будет перемещать игроков для регистрации/авторизации")
         })
         public String auth = "auth";
 

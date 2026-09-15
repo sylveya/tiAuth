@@ -9,8 +9,6 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.proxy.ProxyServer;
-import com.velocitypowered.api.proxy.server.ServerInfo;
-import com.velocitypowered.api.scheduler.ScheduledTask;
 import lombok.Getter;
 import net.byteflux.libby.Library;
 import net.byteflux.libby.VelocityLibraryManager;
@@ -20,8 +18,6 @@ import ru.matveylegenda.tiauth.config.MainConfig;
 import ru.matveylegenda.tiauth.config.MessagesConfig;
 import ru.matveylegenda.tiauth.database.Database;
 import ru.matveylegenda.tiauth.database.backup.DatabaseBackup;
-import ru.matveylegenda.tiauth.picolimbo.LibraryLoader;
-import ru.matveylegenda.tiauth.picolimbo.PicoLimboRunner;
 import ru.matveylegenda.tiauth.util.KeyLoader;
 import ru.matveylegenda.tiauth.util.Utils;
 import ru.matveylegenda.tiauth.velocity.api.TiAuthAPI;
@@ -36,8 +32,6 @@ import ru.matveylegenda.tiauth.velocity.manager.TotpManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Getter
@@ -65,9 +59,6 @@ public final class TiAuth {
 
     private byte[] secretKey;
 
-    private PicoLimboRunner worker;
-    private ScheduledTask limboTask;
-
     @Inject
     public TiAuth(ProxyServer server, Logger logger, Metrics.Factory metricsFactory) {
         this.server = server;
@@ -86,7 +77,6 @@ public final class TiAuth {
         databaseBackup = new DatabaseBackup(database);
         autoBackupManager = new AutoBackupManager(this);
         autoBackupManager.restart();
-        startLimboServer(dataFolder.toFile());
 
         Utils.initializeColorizer(MainConfig.IMP.serializer);
         taskManager = new TaskManager(this);
@@ -134,13 +124,6 @@ public final class TiAuth {
             } catch (Exception e) {
                 logger.warn("Error during database closing", e);
             }
-        }
-
-        if (worker != null) {
-            worker.stop();
-        }
-        if (limboTask != null) {
-            limboTask.cancel();
         }
     }
 
@@ -233,42 +216,6 @@ public final class TiAuth {
         } catch (Exception e) {
             logger.error("Error during database initialization. Stopping server...", e);
             server.shutdown();
-        }
-    }
-
-    private void startLimboServer(File dataFolder) {
-        if (MainConfig.IMP.servers.useVirtualServer) {
-            Path limboPath = dataFolder.toPath().resolve("picolimbo");
-
-            if (!Files.exists(limboPath)) {
-                try {
-                    Files.createDirectories(limboPath);
-                } catch (IOException e) {
-                    logger.warn("Error when starting the virtual server. Stopping server...", e);
-                    server.shutdown();
-                    return;
-                }
-            }
-
-            Path configFile = limboPath.resolve("config.toml");
-
-            try {
-                LibraryLoader.RustLib lib = LibraryLoader.loadOrDownloadLib(limboPath);
-
-                this.worker = new PicoLimboRunner(MainConfig.IMP.servers.virtualServerPort, configFile, lib);
-
-                limboTask = server.getScheduler().buildTask(this, worker).schedule();
-
-                server.registerServer(
-                        new ServerInfo(
-                                MainConfig.IMP.servers.auth,
-                                new InetSocketAddress("127.0.0.1", MainConfig.IMP.servers.virtualServerPort)
-                        )
-                );
-            } catch (Exception e) {
-                logger.warn("Error when starting the virtual server. Stopping server...", e);
-                server.shutdown();
-            }
         }
     }
 

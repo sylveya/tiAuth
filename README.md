@@ -14,8 +14,6 @@ Authorization plugin for BungeeCord and Velocity
   - Supports account linking with Google Authenticator, Discord, and Telegram via [tiAuth-SocialAddon](https://github.com/1050TIt0p/tiAuth-SocialAddon)
 - Multiple database types support
   - Supports `SQLite`, `H2`, `MySQL`, `PostgreSQL`
-- Virtual server
-  - Virtual server for auth server powered by [PicoLimbo](https://github.com/Quozul/PicoLimbo/)
 
 ---
 
